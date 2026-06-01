@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FINANSE — System Kontroli</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --black:   #ffffff;
+  --dark:    #f8f8f8;
+  --card:    #ffffff;
+  --border:  #e8e8e8;
+  --metal1:  #555555;
+  --metal2:  #888888;
+  --metal3:  #1a1a1a;
+  --accent:  #1a1a1a;
+  --accent2: #444444;
+  --green:   #16a34a;
+  --red:     #dc2626;
+  --blue:    #2563eb;
+  --purple:  #7c3aed;
+  --orange:  #ea580c;
+  --text:    #1a1a1a;
+  --muted:   #999999;
+  --tab-h:   52px;
+}
+
+body {
+  background: #f4f4f2;
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: .6;
+}
+
+/* ─── HEADER ─── */
+.app-header {
+  padding: 28px 40px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  position: relative; z-index: 2;
+}
+.logo { font-size: 11px; letter-spacing: .35em; text-transform: uppercase; color: var(--muted); font-family: 'DM Mono', monospace; }
+.logo span { color: var(--accent); }
+.header-right { display: flex; align-items: center; gap: 16px; }
+.date-badge { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: .1em; }
+
+/* health bar in header */
+.health-strip {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  color: var(--muted); letter-spacing: .1em;
+}
+.health-bar {
+  width: 80px; height: 6px; background: #1a1a1a; border-radius: 3px;
+  border: 1px solid var(--border); overflow: hidden;
+}
+.health-fill {
+  height: 100%; border-radius: 3px;
+  transition: width .8s cubic-bezier(.4,0,.2,1), background .8s;
+}
+
+/* ─── TABS ─── */
+.tabs-wrap { padding: 24px 40px 0; position: relative; z-index: 2; }
+.tabs { display: flex; gap: 2px; }
+.tab {
+  height: var(--tab-h); padding: 0 24px;
+  border: none; cursor: pointer;
+  font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600;
+  letter-spacing: .15em; text-transform: uppercase;
+  border-radius: 6px 6px 0 0; position: relative; transition: all .25s;
+  background: linear-gradient(180deg, #ececec 0%, #e0e0e0 100%);
+  color: #999; border: 1px solid #d8d8d8; border-bottom: none;
+}
+.tab::before {
+  content: ''; position: absolute; inset: 0; border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.7) 0%, transparent 60%);
+  pointer-events: none;
+}
+.tab:hover { color: #555; background: linear-gradient(180deg, #f0f0f0, #e8e8e8); }
+.tab.active {
+  background: linear-gradient(180deg, #ffffff 0%, #f8f8f8 100%);
+  color: #1a1a1a; border-color: #e0e0e0; z-index: 2;
+  box-shadow: 0 -2px 12px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,1);
+}
+.tab.active::after {
+  content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, #1a1a1a, transparent);
+}
+.tab.tab-psych.active::after {
+  background: linear-gradient(90deg, transparent, #dc2626, transparent);
+}
+
+/* ─── CONTENT ─── */
+.content-area {
+  margin: 0 40px 120px;
+  border: 1px solid #e0e0e0; border-radius: 0 8px 8px 8px;
+  background: #ffffff; padding: 32px;
+  box-shadow: 0 4px 32px rgba(0,0,0,.07);
+  position: relative; z-index: 2;
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ─── LAYER 1 STYLES (unchanged) ─── */
+.summary-hero { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: start; margin-bottom: 36px; padding-bottom: 32px; border-bottom: 1px solid var(--border); }
+.balance-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.balance-amount { font-size: 52px; font-weight: 800; letter-spacing: -.02em; line-height: 1; background: linear-gradient(135deg, #1a1a1a 30%, #555 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.balance-amount.negative { background: linear-gradient(135deg, #f87171, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.balance-sub { margin-top: 8px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+.summary-pills { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.pill { display: flex; align-items: center; gap: 10px; background: #f8f8f8; border: 1px solid #e8e8e8; border-radius: 100px; padding: 8px 16px; font-family: 'DM Mono', monospace; font-size: 12px; min-width: 180px; justify-content: space-between; }
+.pill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.pill-label { color: var(--muted); font-size: 10px; letter-spacing: .1em; }
+.pill-val { font-weight: 500; }
+.c-green { color: var(--green); } .c-red { color: var(--red); } .c-blue { color: var(--blue); } .c-gold { color: #555; }
+.progress-row { margin-bottom: 32px; }
+.progress-label { display: flex; justify-content: space-between; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-bottom: 8px; letter-spacing: .1em; }
+.progress-track { height: 4px; background: #ebebeb; border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, #1a1a1a, #555); transition: width .6s cubic-bezier(.4,0,.2,1); position: relative; }
+.progress-fill::after { content: ''; position: absolute; right: 0; top: -2px; width: 8px; height: 8px; border-radius: 50%; background: #555; box-shadow: 0 0 8px rgba(0,0,0,.2); }
+.sections-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.section-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; }
+.section-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f0f0f0; background: linear-gradient(180deg, #fafafa, #f6f6f6); }
+.section-title { font-size: 10px; letter-spacing: .25em; text-transform: uppercase; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.section-icon { width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+.section-total { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; }
+.section-body { padding: 16px 20px; }
+.item-list { display: flex; flex-direction: column; gap: 6px; }
+.item-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 6px; background: #fafafa; border: 1px solid transparent; transition: all .2s; }
+.item-row:hover { background: #f2f2f2; border-color: #e8e8e8; }
+.item-name { flex: 1; font-size: 13px; font-weight: 500; }
+.item-amount { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; }
+.item-del { width: 22px; height: 22px; border-radius: 4px; background: transparent; border: none; cursor: pointer; color: #ccc; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all .2s; opacity: 0; }
+.item-row:hover .item-del { opacity: 1; }
+.item-del:hover { background: rgba(220,38,38,.08); color: var(--red); }
+.add-form { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
+.add-input { flex: 1; background: #fafafa; border: 1px solid #e8e8e8; border-radius: 6px; padding: 9px 12px; color: var(--text); font-family: 'Syne', sans-serif; font-size: 13px; outline: none; transition: border-color .2s; }
+.add-input:focus { border-color: #bbb; }
+.add-input::placeholder { color: #ccc; }
+.add-input.amount { width: 90px; flex: none; font-family: 'DM Mono', monospace; }
+.add-btn { width: 36px; height: 36px; border-radius: 6px; background: #1a1a1a; border: none; cursor: pointer; color: #fff; font-size: 18px; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: all .2s; flex-shrink: 0; }
+.add-btn:hover { transform: scale(1.06); box-shadow: 0 4px 16px rgba(0,0,0,.2); background: #333; }
+.add-btn:active { transform: scale(.96); }
+.goal-item { padding: 14px 20px; border-bottom: 1px solid #f0f0f0; }
+.goal-item:last-child { border-bottom: none; }
+.goal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.goal-name { font-size: 13px; font-weight: 600; }
+.goal-numbers { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.goal-saved { color: #1a1a1a; font-weight: 600; }
+.goal-track { height: 3px; background: #ebebeb; border-radius: 2px; overflow: hidden; }
+.goal-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--purple), var(--blue)); transition: width .6s; }
+.goal-del { background: none; border: none; cursor: pointer; color: #ccc; font-size: 14px; opacity: 0; transition: opacity .2s; }
+.goal-item:hover .goal-del { opacity: 1; }
+.goal-item:hover .goal-del:hover { color: var(--red); }
+.goals-add { display: grid; grid-template-columns: 1fr 90px 90px auto; gap: 8px; padding: 14px 20px; border-top: 1px solid #f0f0f0; background: #fafafa; }
+.empty { text-align: center; padding: 20px; font-family: 'DM Mono', monospace; font-size: 11px; color: #ccc; letter-spacing: .1em; }
+.analysis-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 28px; }
+.stat-card { background: #fafafa; border: 1px solid #ebebeb; border-radius: 10px; padding: 20px; }
+.stat-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: .25em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.stat-value { font-size: 26px; font-weight: 800; }
+.stat-sub { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 4px; }
+.chart-bar-wrap { background: #fafafa; border: 1px solid #ebebeb; border-radius: 10px; padding: 24px; }
+.chart-title { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-bottom: 20px; font-family: 'DM Mono', monospace; }
+.bars { display: flex; align-items: flex-end; gap: 12px; height: 120px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.bar-outer { width: 100%; flex: 1; display: flex; align-items: flex-end; }
+.bar-inner { width: 100%; border-radius: 4px 4px 0 0; transition: height .6s cubic-bezier(.4,0,.2,1); min-height: 4px; }
+.bar-lbl { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); }
+.settings-section { margin-bottom: 24px; }
+.settings-title { font-size: 10px; letter-spacing: .25em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; font-family: 'DM Mono', monospace; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; }
+.settings-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
+.settings-label { font-size: 13px; }
+.settings-val { font-family: 'DM Mono', monospace; font-size: 13px; color: #1a1a1a; font-weight: 600; }
+.clear-btn { padding: 10px 24px; background: transparent; border: 1px solid #e0e0e0; border-radius: 6px; color: var(--muted); font-family: 'Syne', sans-serif; font-size: 12px; letter-spacing: .1em; cursor: pointer; transition: all .2s; margin-top: 16px; }
+.clear-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* ═══════════════════════════════════════
+   WARSTWA 2 — PSYCHOLOGIA WYDAWANIA
+═══════════════════════════════════════ */
+
+/* ─── FLOATING SOS BUTTON ─── */
+.sos-float {
+  position: fixed;
+  right: 28px;
+  bottom: 36px;
+  z-index: 500;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.sos-btn {
+  width: 62px; height: 62px; border-radius: 50%;
+  border: 2px solid #dc2626;
+  background: radial-gradient(circle at 35% 35%, #fff5f5, #fef2f2);
+  cursor: pointer;
+  font-size: 26px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 0 0 rgba(220,38,38,.3), 0 4px 20px rgba(0,0,0,.12);
+  animation: sosPulse 2.4s ease-in-out infinite;
+  transition: transform .15s;
+  position: relative;
+}
+.sos-btn:hover { transform: scale(1.1); }
+.sos-btn:active { transform: scale(.92); }
+@keyframes sosPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,.3), 0 4px 20px rgba(0,0,0,.12); }
+  50%       { box-shadow: 0 0 0 14px rgba(220,38,38,0), 0 4px 20px rgba(0,0,0,.12); }
+}
+.sos-label {
+  font-family: 'DM Mono', monospace; font-size: 9px;
+  letter-spacing: .12em; color: #dc2626;
+  text-transform: uppercase;
+}
+
+/* ─── SOS MODAL ─── */
+.sos-overlay {
+  position: fixed; inset: 0; z-index: 600;
+  background: rgba(255,255,255,.88);
+  backdrop-filter: blur(8px);
+  display: none; align-items: center; justify-content: center;
+}
+.sos-overlay.open { display: flex; animation: fadeIn .2s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.sos-modal {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 16px;
+  padding: 36px;
+  max-width: 520px; width: 90%;
+  box-shadow: 0 8px 60px rgba(0,0,0,.12);
+  animation: slideUp .25s cubic-bezier(.4,0,.2,1);
+}
+@keyframes slideUp { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.sos-modal-header {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 24px;
+}
+.sos-modal-icon { font-size: 36px; }
+.sos-modal-title {
+  font-size: 20px; font-weight: 800; color: #dc2626;
+  letter-spacing: -.01em;
+}
+.sos-modal-sub {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  color: var(--muted); letter-spacing: .15em; text-transform: uppercase;
+}
+.sos-questions {
+  display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;
+}
+.sos-q {
+  background: #fafafa; border: 1px solid #ebebeb;
+  border-radius: 10px; padding: 16px;
+}
+.sos-q-text {
+  font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.4;
+}
+.sos-q-answers { display: flex; gap: 8px; flex-wrap: wrap; }
+.sos-ans {
+  padding: 6px 14px; border-radius: 20px; font-size: 12px;
+  background: #fff; border: 1px solid #e0e0e0;
+  cursor: pointer; font-family: 'Syne', sans-serif;
+  transition: all .2s;
+}
+.sos-ans:hover { border-color: #dc2626; color: #dc2626; }
+.sos-ans.chosen { background: rgba(220,38,38,.06); border-color: #dc2626; color: #dc2626; }
+
+.sos-result {
+  display: none;
+  background: #fafafa; border: 1px solid #ebebeb;
+  border-radius: 10px; padding: 20px;
+  margin-bottom: 20px;
+}
+.sos-result.show { display: block; animation: fadeIn .3s ease; }
+.sos-result-verdict {
+  font-size: 15px; font-weight: 700; margin-bottom: 8px;
+}
+.sos-result-text { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); line-height: 1.6; }
+.sos-result.green { border-color: #bbf7d0; background: #f0fdf4; }
+.sos-result.green .sos-result-verdict { color: var(--green); }
+.sos-result.orange { border-color: #fed7aa; background: #fff7ed; }
+.sos-result.orange .sos-result-verdict { color: var(--orange); }
+.sos-result.red { border-color: #fecaca; background: #fef2f2; }
+.sos-result.red .sos-result-verdict { color: var(--red); }
+
+.sos-modal-btns { display: flex; gap: 10px; }
+.sos-btn-close {
+  flex: 1; padding: 12px;
+  background: #f5f5f5; border: 1px solid #e8e8e8;
+  border-radius: 8px; cursor: pointer; color: var(--muted);
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600;
+  transition: all .2s;
+}
+.sos-btn-close:hover { border-color: #ccc; color: var(--text); }
+.sos-btn-stop {
+  flex: 1; padding: 12px;
+  background: #1a1a1a;
+  border: 1px solid #1a1a1a; border-radius: 8px;
+  cursor: pointer; color: #fff;
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+  transition: all .2s; letter-spacing: .05em;
+}
+.sos-btn-stop:hover { background: #333; box-shadow: 0 4px 16px rgba(0,0,0,.15); }
+
+/* ─── YOLO OVERLAY ─── */
+.yolo-overlay {
+  position: fixed; inset: 0; z-index: 800;
+  background: #000;
+  display: none;
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px;
+  overflow: hidden;
+}
+.yolo-overlay.show { display: flex; }
+
+/* glitch scanlines */
+.yolo-overlay::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,0,0,.015) 2px, rgba(255,0,0,.015) 4px);
+  pointer-events: none; z-index: 1;
+  animation: scanMove 8s linear infinite;
+}
+@keyframes scanMove { from { transform: translateY(0); } to { transform: translateY(4px); } }
+
+/* red breathing background */
+.yolo-overlay::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, rgba(120,0,0,.4) 0%, transparent 70%);
+  animation: breathe 2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes breathe {
+  0%, 100% { opacity: .4; transform: scale(1); }
+  50%       { opacity: .9; transform: scale(1.1); }
+}
+
+.yolo-content {
+  position: relative; z-index: 2;
+  text-align: center;
+  animation: yoloShake .12s ease-in-out infinite;
+}
+@keyframes yoloShake {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-2px) rotate(-.3deg); }
+  75%      { transform: translateX(2px) rotate(.3deg); }
+}
+
+.yolo-skull { font-size: 80px; display: block; margin-bottom: 16px;
+  animation: skullBounce .6s ease-in-out infinite; }
+@keyframes skullBounce {
+  0%,100% { transform: scale(1) rotate(-3deg); }
+  50%     { transform: scale(1.15) rotate(3deg); }
+}
+
+.yolo-main {
+  font-family: 'Black Han Sans', 'Syne', sans-serif;
+  font-size: clamp(48px, 10vw, 96px);
+  font-weight: 900;
+  line-height: .92;
+  color: #ff1111;
+  text-transform: uppercase;
+  letter-spacing: -.02em;
+  text-shadow: 0 0 40px rgba(255,0,0,.8), 0 0 80px rgba(255,0,0,.4);
+  margin-bottom: 20px;
+  animation: glitch 3s infinite;
+}
+@keyframes glitch {
+  0%, 94%, 100% { text-shadow: 0 0 40px rgba(255,0,0,.8), 0 0 80px rgba(255,0,0,.4); clip-path: none; }
+  95%  { text-shadow: -3px 0 #00ffff, 3px 0 #ff00ff; clip-path: inset(20% 0 60% 0); }
+  96%  { text-shadow: 3px 0 #00ffff, -3px 0 #ff00ff; clip-path: inset(50% 0 20% 0); }
+  97%  { text-shadow: 0 0 40px rgba(255,0,0,.8); clip-path: none; }
+}
+
+.yolo-msgs {
+  display: flex; flex-direction: column; gap: 6px; margin-bottom: 28px;
+}
+.yolo-msg {
+  font-family: 'DM Mono', monospace;
+  font-size: clamp(13px, 2.5vw, 18px);
+  color: #ff6666;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: msgAppear .4s ease forwards;
+}
+.yolo-msg:nth-child(1) { animation-delay: .1s; }
+.yolo-msg:nth-child(2) { animation-delay: .3s; }
+.yolo-msg:nth-child(3) { animation-delay: .5s; }
+.yolo-msg:nth-child(4) { animation-delay: .7s; }
+@keyframes msgAppear { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: none; } }
+
+.yolo-balance {
+  font-family: 'DM Mono', monospace;
+  font-size: clamp(20px, 4vw, 36px);
+  font-weight: 700;
+  color: #fff;
+  background: rgba(255,0,0,.15);
+  border: 1px solid rgba(255,0,0,.4);
+  border-radius: 8px;
+  padding: 12px 32px;
+  margin-bottom: 32px;
+  letter-spacing: .05em;
+}
+.yolo-balance-label { font-size: 10px; letter-spacing: .3em; opacity: .6; display: block; margin-bottom: 4px; }
+
+.yolo-close {
+  padding: 14px 48px;
+  background: transparent;
+  border: 2px solid #ff3333;
+  border-radius: 8px;
+  color: #ff3333;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px; font-weight: 700;
+  letter-spacing: .15em; text-transform: uppercase;
+  cursor: pointer;
+  transition: all .2s;
+}
+.yolo-close:hover { background: rgba(255,51,51,.15); box-shadow: 0 0 30px rgba(255,0,0,.3); }
+
+/* ─── PSYCHOLOGIA TAB ─── */
+.psych-header {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 28px; padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.psych-icon { font-size: 32px; }
+.psych-title { font-size: 22px; font-weight: 800; }
+.psych-subtitle { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: .2em; text-transform: uppercase; margin-top: 2px; }
+
+/* health dashboard */
+.health-dashboard {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px;
+}
+.health-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 22px; position: relative; overflow: hidden;
+}
+.health-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.health-card.green::before { background: linear-gradient(90deg, var(--green), transparent); }
+.health-card.orange::before { background: linear-gradient(90deg, var(--orange), transparent); }
+.health-card.red::before { background: linear-gradient(90deg, var(--red), transparent); }
+.health-card.purple::before { background: linear-gradient(90deg, var(--purple), transparent); }
+
+.hc-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: .25em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.hc-value { font-size: 32px; font-weight: 800; margin-bottom: 6px; }
+.hc-bar { height: 4px; background: #ebebeb; border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+.hc-bar-fill { height: 100%; border-radius: 2px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+.hc-desc { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); line-height: 1.5; }
+
+/* impulse log */
+.impulse-section { background: #fff; border: 1px solid #e8e8e8; border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+.impulse-section-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f0f0f0; background: linear-gradient(180deg, #fafafa, #f6f6f6); }
+.impulse-title { font-size: 10px; letter-spacing: .25em; text-transform: uppercase; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.impulse-body { padding: 20px; }
+.impulse-add { display: grid; grid-template-columns: 1fr 100px 120px auto; gap: 8px; margin-bottom: 16px; }
+.impulse-log { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
+.impulse-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 8px;
+  background: #fafafa; border: 1px solid #ebebeb;
+  transition: all .2s;
+}
+.impulse-row:hover { background: #f2f2f2; }
+.impulse-emoji { font-size: 18px; flex-shrink: 0; }
+.impulse-info { flex: 1; }
+.impulse-name { font-size: 13px; font-weight: 600; }
+.impulse-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 2px; }
+.impulse-amt { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 600; color: var(--orange); }
+.impulse-del { background: none; border: none; cursor: pointer; color: #ccc; font-size: 14px; opacity: 0; transition: opacity .2s; }
+.impulse-row:hover .impulse-del { opacity: 1; }
+.impulse-row:hover .impulse-del:hover { color: var(--red); }
+
+.category-select {
+  background: #fafafa; border: 1px solid #e8e8e8; border-radius: 6px;
+  padding: 9px 12px; color: var(--text);
+  font-family: 'Syne', sans-serif; font-size: 12px;
+  outline: none; cursor: pointer;
+}
+
+/* tips */
+.tips-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.tip-card {
+  background: #fafafa; border: 1px solid #ebebeb;
+  border-radius: 10px; padding: 16px;
+}
+.tip-icon { font-size: 22px; margin-bottom: 8px; }
+.tip-title { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+.tip-text { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); line-height: 1.6; }
+
+/* ════════════════════════════════════════
+   WARSTWA 3 — RANKING DECYZJI
+════════════════════════════════════════ */
+
+/* ─── RANK TAB glow ─── */
+.tab.tab-rank.active::after {
+  background: linear-gradient(90deg, transparent, #1a1a1a, transparent);
+}
+
+/* ─── TITLE REVEAL OVERLAY ─── */
+.title-reveal {
+  position: fixed; inset: 0; z-index: 900;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.96);
+  backdrop-filter: blur(12px);
+  flex-direction: column;
+}
+.title-reveal.show { display: flex; }
+.title-reveal::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, var(--tr-color, rgba(212,175,55,.3)) 0%, transparent 65%);
+  animation: trBreath 1.5s ease-in-out infinite;
+}
+@keyframes trBreath {
+  0%,100% { transform: scale(1); opacity: .7; }
+  50%     { transform: scale(1.15); opacity: 1; }
+}
+.title-reveal-inner {
+  position: relative; z-index: 2;
+  text-align: center;
+  animation: trSlide .5s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes trSlide { from { transform: translateY(40px) scale(.92); opacity: 0; } to { transform: none; opacity: 1; } }
+.tr-prefix {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px; letter-spacing: .4em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 16px;
+}
+.tr-emoji { font-size: 72px; display: block; margin-bottom: 12px;
+  animation: trEmojiBounce .5s ease-in-out .3s both;
+}
+@keyframes trEmojiBounce { from { transform: scale(0) rotate(-15deg); } to { transform: scale(1) rotate(0); } }
+.tr-title {
+  font-family: 'Black Han Sans', 'Syne', sans-serif;
+  font-size: clamp(36px, 8vw, 72px);
+  font-weight: 900; line-height: 1;
+  letter-spacing: -.02em;
+  color: var(--tr-text, var(--accent));
+  text-shadow: 0 0 40px var(--tr-glow, rgba(212,175,55,.6));
+  margin-bottom: 16px;
+}
+.tr-subtitle {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px; color: var(--muted); letter-spacing: .08em;
+  max-width: 400px; line-height: 1.6; margin: 0 auto 28px;
+}
+.tr-pts {
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  color: var(--muted); letter-spacing: .2em;
+  margin-bottom: 28px;
+}
+.tr-close {
+  padding: 12px 40px; background: #1a1a1a;
+  border: 1px solid #1a1a1a; border-radius: 8px;
+  color: #fff; font-family: 'Syne', sans-serif;
+  font-size: 13px; font-weight: 600; letter-spacing: .1em;
+  cursor: pointer; transition: all .2s;
+}
+.tr-close:hover { background: #333; }
+
+/* ─── RANKING PANEL ─── */
+.rank-header {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 28px; padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.rank-icon { font-size: 32px; }
+.rank-title { font-size: 22px; font-weight: 800; }
+.rank-subtitle { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: .2em; text-transform: uppercase; margin-top: 2px; }
+
+/* current title card */
+.current-title-card {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 14px; padding: 28px 32px;
+  margin-bottom: 28px;
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; gap: 24px;
+  box-shadow: 0 2px 16px rgba(0,0,0,.05);
+}
+.current-title-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, #1a1a1a, transparent);
+}
+.ctc-emoji { font-size: 52px; flex-shrink: 0; }
+.ctc-info { flex: 1; }
+.ctc-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: .3em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.ctc-name { font-size: 28px; font-weight: 800; letter-spacing: -.01em; }
+.ctc-desc { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+.ctc-pts {
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  color: var(--muted); flex-shrink: 0; text-align: right;
+}
+.ctc-score { font-size: 32px; font-weight: 800; color: #1a1a1a; display: block; }
+.ctc-score-label { font-size: 9px; letter-spacing: .2em; text-transform: uppercase; }
+.reveal-btn {
+  display: block; margin-top: 10px;
+  padding: 6px 14px; border-radius: 20px;
+  background: #f5f5f5; border: 1px solid #e0e0e0;
+  color: #555; font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: .1em; cursor: pointer;
+  transition: all .2s;
+}
+.reveal-btn:hover { background: #ebebeb; color: #1a1a1a; }
+
+.rank-stats-grid {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 12px;
+  margin-bottom: 28px;
+}
+.rank-stat {
+  background: #fafafa; border: 1px solid #ebebeb;
+  border-radius: 10px; padding: 16px; text-align: center;
+}
+.rs-icon { font-size: 20px; margin-bottom: 8px; }
+.rs-val { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+.rs-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); }
+
+/* titles grid */
+.titles-section { margin-bottom: 28px; }
+.titles-section-hdr {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  letter-spacing: .25em; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 14px; padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.titles-grid {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 10px;
+}
+.title-card {
+  background: #fafafa; border: 1px solid #ebebeb;
+  border-radius: 10px; padding: 16px;
+  transition: all .2s; position: relative; overflow: hidden;
+}
+.title-card.unlocked {
+  border-color: var(--tc-color, #ebebeb);
+  background: #fff;
+  box-shadow: 0 2px 16px rgba(0,0,0,.06);
+}
+.title-card.active-title {
+  border-color: #1a1a1a;
+  box-shadow: 0 4px 24px rgba(0,0,0,.1);
+}
+.title-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--tc-color, transparent);
+  opacity: 0; transition: opacity .3s;
+}
+.title-card.unlocked::before { opacity: 1; }
+.tc-emoji { font-size: 24px; margin-bottom: 8px; display: block; }
+.tc-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.tc-condition { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); line-height: 1.5; }
+.tc-badge {
+  position: absolute; top: 10px; right: 10px;
+  font-family: 'DM Mono', monospace; font-size: 8px;
+  letter-spacing: .1em; text-transform: uppercase;
+  padding: 3px 7px; border-radius: 10px;
+}
+.tc-badge.locked { background: #f5f5f5; color: #ccc; border: 1px solid #ebebeb; }
+.tc-badge.earned { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.tc-badge.current { background: #1a1a1a; color: #fff; border: 1px solid #1a1a1a; }
+
+/* decision log */
+.decision-log-section {
+  background: #fff; border: 1px solid #e8e8e8;
+  border-radius: 12px; overflow: hidden;
+}
+.decision-log-hdr {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px; border-bottom: 1px solid #f0f0f0;
+  background: linear-gradient(180deg, #fafafa, #f6f6f6);
+}
+.decision-log-title { font-size: 10px; letter-spacing: .25em; text-transform: uppercase; font-weight: 700; }
+.decision-log-body { padding: 16px 20px; }
+.decision-log-add {
+  display: grid; grid-template-columns: 1fr 160px auto; gap: 8px;
+  margin-bottom: 14px;
+}
+.decision-list { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; }
+.decision-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 8px;
+  background: #fafafa; border: 1px solid #ebebeb;
+  transition: all .2s;
+}
+.decision-row:hover { background: #f2f2f2; }
+.dec-type-icon { font-size: 16px; flex-shrink: 0; }
+.dec-info { flex: 1; }
+.dec-name { font-size: 13px; font-weight: 600; }
+.dec-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 2px; }
+.dec-pts {
+  font-family: 'DM Mono', monospace; font-size: 12px;
+  font-weight: 600; flex-shrink: 0;
+}
+.dec-del { background: none; border: none; cursor: pointer; color: #ccc; font-size: 14px; opacity: 0; transition: opacity .2s; }
+.decision-row:hover .dec-del { opacity: 1; }
+.decision-row:hover .dec-del:hover { color: var(--red); }
+
+.dec-type-select {
+  background: #fafafa; border: 1px solid #e8e8e8; border-radius: 6px;
+  padding: 9px 12px; color: var(--text);
+  font-family: 'Syne', sans-serif; font-size: 12px; outline: none; cursor: pointer;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: #1a1a1a; border: 1px solid #333;
+  border-radius: 8px; padding: 10px 20px;
+  font-family: 'DM Mono', monospace; font-size: 12px; color: #fff;
+  box-shadow: 0 8px 32px rgba(0,0,0,.15);
+  opacity: 0; transition: all .3s; pointer-events: none; z-index: 1000;
+  white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+
+@media (max-width: 768px) {
+  .app-header, .tabs-wrap, .content-area { padding-left: 20px; padding-right: 20px; }
+  .content-area { margin: 0 20px 100px; }
+  .sections-grid, .health-dashboard, .tips-grid { grid-template-columns: 1fr; }
+  .balance-amount { font-size: 36px; }
+  .analysis-grid { grid-template-columns: 1fr 1fr; }
+  .goals-add, .impulse-add { grid-template-columns: 1fr 1fr; }
+  .summary-hero { grid-template-columns: 1fr; }
+  .summary-pills { align-items: flex-start; }
+  .tabs { overflow-x: auto; }
+  .tab { padding: 0 16px; white-space: nowrap; font-size: 11px; }
+  .sos-float { right: 16px; bottom: 20px; }
+  .yolo-main { font-size: 42px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="app-header">
+  <div class="logo">FINANSE <span>//</span> SYSTEM KONTROLI</div>
+  <div class="header-right">
+    <div class="health-strip">
+      <span>PORTFEL</span>
+      <div class="health-bar"><div class="health-fill" id="headerHealth" style="width:0%"></div></div>
+      <span id="headerHealthPct">—</span>
+    </div>
+    <div class="date-badge" id="dateLabel"></div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs-wrap">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('budzet',this)">Budżet</button>
+    <button class="tab" onclick="switchTab('analiza',this)">Analiza</button>
+    <button class="tab tab-psych" onclick="switchTab('psychologia',this)">💀 Psychologia</button>
+    <button class="tab tab-rank" onclick="switchTab('ranking',this)">🏆 Ranking</button>
+    <button class="tab" onclick="switchTab('ustawienia',this)">Ustawienia</button>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content-area">
+
+  <!-- ═══ BUDŻET ═══ -->
+  <div class="tab-panel active" id="panel-budzet">
+    <div class="summary-hero">
+      <div class="balance-block">
+        <div class="balance-label">// Saldo miesięczne</div>
+        <div class="balance-amount" id="heroBalance">0,00 zł</div>
+        <div class="balance-sub" id="heroSub">—</div>
+      </div>
+      <div class="summary-pills">
+        <div class="pill"><span class="pill-dot" style="background:var(--green)"></span><span class="pill-label">DOCHÓD</span><span class="pill-val c-green" id="pillIncome">0,00 zł</span></div>
+        <div class="pill"><span class="pill-dot" style="background:var(--red)"></span><span class="pill-label">KOSZTY STAŁE</span><span class="pill-val c-red" id="pillFixed">0,00 zł</span></div>
+        <div class="pill"><span class="pill-dot" style="background:var(--blue)"></span><span class="pill-label">KOSZTY ZMIENNE</span><span class="pill-val c-blue" id="pillVar">0,00 zł</span></div>
+      </div>
+    </div>
+    <div class="progress-row">
+      <div class="progress-label"><span>// Wydatki jako % dochodu</span><span id="progressPct">0%</span></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    </div>
+    <div class="sections-grid">
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title"><div class="section-icon" style="background:rgba(34,197,94,.1)">↑</div><span style="color:var(--green)">Dochód</span></div>
+          <div class="section-total c-green" id="totalIncome">0,00 zł</div>
+        </div>
+        <div class="section-body">
+          <div class="item-list" id="listIncome"></div>
+          <div class="add-form">
+            <input class="add-input" id="nameIncome" placeholder="Nazwa">
+            <input class="add-input amount" id="amtIncome" type="number" placeholder="0,00" min="0">
+            <button class="add-btn" onclick="addItem('income')">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title"><div class="section-icon" style="background:rgba(239,68,68,.1)">⬛</div><span style="color:var(--red)">Koszty stałe</span></div>
+          <div class="section-total c-red" id="totalFixed">0,00 zł</div>
+        </div>
+        <div class="section-body">
+          <div class="item-list" id="listFixed"></div>
+          <div class="add-form">
+            <input class="add-input" id="nameFixed" placeholder="Nazwa">
+            <input class="add-input amount" id="amtFixed" type="number" placeholder="0,00" min="0">
+            <button class="add-btn" onclick="addItem('fixed')">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title"><div class="section-icon" style="background:rgba(96,165,250,.1)">≈</div><span style="color:var(--blue)">Koszty zmienne</span></div>
+          <div class="section-total c-blue" id="totalVar">0,00 zł</div>
+        </div>
+        <div class="section-body">
+          <div class="item-list" id="listVar"></div>
+          <div class="add-form">
+            <input class="add-input" id="nameVar" placeholder="Nazwa">
+            <input class="add-input amount" id="amtVar" type="number" placeholder="0,00" min="0">
+            <button class="add-btn" onclick="addItem('variable')">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title"><div class="section-icon" style="background:rgba(167,139,250,.1)">◈</div><span style="color:var(--purple)">Cele oszczędnościowe</span></div>
+          <div class="section-total" style="color:var(--purple)" id="totalGoals">0,00 zł</div>
+        </div>
+        <div class="section-body" style="padding:0">
+          <div id="listGoals"></div>
+          <div class="goals-add">
+            <input class="add-input" id="goalName" placeholder="Cel (np. Wakacje)">
+            <input class="add-input amount" id="goalTarget" type="number" placeholder="Cel zł" min="0">
+            <input class="add-input amount" id="goalSaved" type="number" placeholder="Mam zł" min="0">
+            <button class="add-btn" onclick="addGoal()">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ANALIZA ═══ -->
+  <div class="tab-panel" id="panel-analiza">
+    <div class="analysis-grid">
+      <div class="stat-card"><div class="stat-label">// wskaźnik oszczędności</div><div class="stat-value c-green" id="savingsRate">0%</div><div class="stat-sub">z dochodu zostaje</div></div>
+      <div class="stat-card"><div class="stat-label">// koszty stałe / dochód</div><div class="stat-value c-red" id="fixedRate">0%</div><div class="stat-sub">zobowiązania stałe</div></div>
+      <div class="stat-card"><div class="stat-label">// wolne środki</div><div class="stat-value c-gold" id="freeFlow">0 zł</div><div class="stat-sub">po wszystkich kosztach</div></div>
+    </div>
+    <div class="chart-bar-wrap">
+      <div class="chart-title">// struktura budżetu</div>
+      <div class="bars">
+        <div class="bar-col"><div class="bar-outer"><div class="bar-inner" id="bIncome" style="background:var(--green);height:0%"></div></div><div class="bar-lbl">DOCHÓD</div></div>
+        <div class="bar-col"><div class="bar-outer"><div class="bar-inner" id="bFixed" style="background:var(--red);height:0%"></div></div><div class="bar-lbl">STAŁE</div></div>
+        <div class="bar-col"><div class="bar-outer"><div class="bar-inner" id="bVar" style="background:var(--blue);height:0%"></div></div><div class="bar-lbl">ZMIENNE</div></div>
+        <div class="bar-col"><div class="bar-outer"><div class="bar-inner" id="bGoals" style="background:var(--purple);height:0%"></div></div><div class="bar-lbl">CELE</div></div>
+        <div class="bar-col"><div class="bar-outer"><div class="bar-inner" id="bFree" style="background:var(--accent);height:0%"></div></div><div class="bar-lbl">WOLNE</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PSYCHOLOGIA ═══ -->
+  <div class="tab-panel" id="panel-psychologia">
+    <div class="psych-header">
+      <div class="psych-icon">🧠</div>
+      <div>
+        <div class="psych-title">Psychologia Wydawania</div>
+        <div class="psych-subtitle">// Warstwa II — Symulator kontroli impulsów</div>
+      </div>
+    </div>
+
+    <!-- HEALTH CARDS -->
+    <div class="health-dashboard">
+      <div class="health-card" id="hcWallet">
+        <div class="hc-label">// zdrowie portfela</div>
+        <div class="hc-value" id="hcWalletVal">—</div>
+        <div class="hc-bar"><div class="hc-bar-fill" id="hcWalletBar" style="width:0%"></div></div>
+        <div class="hc-desc" id="hcWalletDesc">Uzupełnij dane budżetu aby zobaczyć stan portfela.</div>
+      </div>
+      <div class="health-card purple">
+        <div class="hc-label">// wydatki impulsywne</div>
+        <div class="hc-value" style="color:var(--purple)" id="hcImpulseVal">0 zł</div>
+        <div class="hc-bar"><div class="hc-bar-fill" id="hcImpulseBar" style="width:0%;background:var(--purple)"></div></div>
+        <div class="hc-desc" id="hcImpulseDesc">Brak zarejestrowanych zakupów impulsywnych.</div>
+      </div>
+    </div>
+
+    <!-- IMPULSE LOG -->
+    <div class="impulse-section">
+      <div class="impulse-section-header">
+        <div class="impulse-title">⚡ Rejestr zakupów impulsywnych</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)" id="impulseTotal">0,00 zł łącznie</div>
+      </div>
+      <div class="impulse-body">
+        <div class="impulse-add">
+          <input class="add-input" id="impulseName" placeholder="Co kupiłeś?">
+          <input class="add-input amount" id="impulseAmt" type="number" placeholder="Kwota zł" min="0">
+          <select class="add-input category-select" id="impulseCat">
+            <option value="🛍️ Zakupy">🛍️ Zakupy</option>
+            <option value="🍕 Jedzenie">🍕 Jedzenie</option>
+            <option value="🎮 Rozrywka">🎮 Rozrywka</option>
+            <option value="👗 Ubrania">👗 Ubrania</option>
+            <option value="📱 Technologia">📱 Technologia</option>
+            <option value="✈️ Podróże">✈️ Podróże</option>
+            <option value="💊 Zdrowie">💊 Zdrowie</option>
+            <option value="🎁 Prezenty">🎁 Prezenty</option>
+            <option value="🤷 Inne">🤷 Inne</option>
+          </select>
+          <button class="add-btn" onclick="addImpulse()">+</button>
+        </div>
+        <div class="impulse-log" id="impulseLog"></div>
+      </div>
+    </div>
+
+    <!-- TIPS -->
+    <div class="tips-grid">
+      <div class="tip-card">
+        <div class="tip-icon">⏱️</div>
+        <div class="tip-title">Zasada 24h</div>
+        <div class="tip-text">Zanim kupisz coś nieplanowanego — poczekaj 24 godziny. 80% impulsów mija.</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">🧮</div>
+        <div class="tip-title">Cena w godzinach pracy</div>
+        <div class="tip-text">Przelicz cenę na godziny swojej pracy. Ten gadżet = 14h pracy. Warto?</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">📵</div>
+        <div class="tip-title">Usuń aplikacje sklepów</div>
+        <div class="tip-text">Powiadomienia o promocjach to pułapki. Usuń je ze smartfona na tydzień próbny.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ USTAWIENIA ═══ -->
+  <div class="tab-panel" id="panel-ustawienia">
+    <div class="settings-section">
+      <div class="settings-title">// podsumowanie danych</div>
+      <div class="settings-row"><span class="settings-label">Liczba pozycji — dochód</span><span class="settings-val" id="sCountInc">0</span></div>
+      <div class="settings-row"><span class="settings-label">Liczba pozycji — koszty stałe</span><span class="settings-val" id="sCountFixed">0</span></div>
+      <div class="settings-row"><span class="settings-label">Liczba pozycji — koszty zmienne</span><span class="settings-val" id="sCountVar">0</span></div>
+      <div class="settings-row"><span class="settings-label">Liczba celów</span><span class="settings-val" id="sCountGoals">0</span></div>
+      <div class="settings-row"><span class="settings-label">Zakupy impulsywne</span><span class="settings-val" id="sCountImpulse">0</span></div>
+      <div class="settings-row"><span class="settings-label">Dane zapisane lokalnie</span><span class="settings-val">localStorage</span></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-title">// próg alarmu YOLO</div>
+      <div class="settings-row">
+        <span class="settings-label">Alarm gdy saldo spada poniżej</span>
+        <span class="settings-val" id="yoloThreshLabel">20% dochodu</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <input class="add-input" id="yoloThreshInput" type="number" placeholder="Próg %" min="1" max="99" value="20" style="width:80px;flex:none">
+        <button class="add-btn" style="width:auto;padding:0 16px;font-size:13px" onclick="setYoloThresh()">Ustaw</button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-title">// zarządzanie danymi</div>
+      <button class="clear-btn" onclick="clearAll()">⚠ Wyczyść wszystkie dane</button>
+    </div>
+  </div>
+
+  <!-- ═══ RANKING ═══ -->
+  <div class="tab-panel" id="panel-ranking">
+
+    <div class="rank-header">
+      <div class="rank-icon">🏆</div>
+      <div>
+        <div class="rank-title">Ranking Decyzji</div>
+        <div class="rank-subtitle">// Warstwa III — Kim jesteś finansowo?</div>
+      </div>
+    </div>
+
+    <!-- CURRENT TITLE -->
+    <div class="current-title-card" id="ctcCard">
+      <div class="ctc-emoji" id="ctcEmoji">❓</div>
+      <div class="ctc-info">
+        <div class="ctc-label">// Twój aktualny tytuł</div>
+        <div class="ctc-name" id="ctcName">Nieznany</div>
+        <div class="ctc-desc" id="ctcDesc">Dodaj decyzje finansowe aby odblokować swój tytuł.</div>
+        <button class="reveal-btn" onclick="showTitleReveal()">✨ Pokaż ceremonię tytułu</button>
+      </div>
+      <div class="ctc-pts">
+        <span class="ctc-score" id="ctcScore">0</span>
+        <span class="ctc-score-label">PUNKTÓW</span>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="rank-stats-grid">
+      <div class="rank-stat">
+        <div class="rs-icon">🚨</div>
+        <div class="rs-val c-red" id="rsSOS">0</div>
+        <div class="rs-label">SOS użyty</div>
+      </div>
+      <div class="rank-stat">
+        <div class="rs-icon">💀</div>
+        <div class="rs-val" style="color:#ff4444" id="rsYOLO">0</div>
+        <div class="rs-label">YOLO alarmów</div>
+      </div>
+      <div class="rank-stat">
+        <div class="rs-icon">✅</div>
+        <div class="rs-val c-green" id="rsOdpusc">0</div>
+        <div class="rs-label">Odpuszczono</div>
+      </div>
+      <div class="rank-stat">
+        <div class="rs-icon">💸</div>
+        <div class="rs-val c-blue" id="rsImpulse">0</div>
+        <div class="rs-label">Kupiono z impulsem</div>
+      </div>
+    </div>
+
+    <!-- ALL TITLES -->
+    <div class="titles-section">
+      <div class="titles-section-hdr">// galeria tytułów</div>
+      <div class="titles-grid" id="titlesGrid"></div>
+    </div>
+
+    <!-- DECISION LOG -->
+    <div class="decision-log-section">
+      <div class="decision-log-hdr">
+        <div class="decision-log-title">📋 Dziennik decyzji finansowych</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)" id="totalDecPoints">0 pkt łącznie</div>
+      </div>
+      <div class="decision-log-body">
+        <div class="decision-log-add">
+          <input class="add-input" id="decName" placeholder="Opisz decyzję (np. Nie kupiłem butów)">
+          <select class="add-input dec-type-select" id="decType">
+            <option value="sos">🚨 Użyłem SOS</option>
+            <option value="odpuscil">✅ Odpuściłem zakup</option>
+            <option value="przemyslal">🧠 Przemyślałem 24h</option>
+            <option value="cel">🎯 Oszczędziłem na cel</option>
+            <option value="yolo">💀 Dostałem YOLO alarm</option>
+            <option value="impuls">💸 Kupiłem z impulsu</option>
+            <option value="promocja">🏷️ Kupiłem na promocji</option>
+            <option value="pozaluje">😬 Żałuję zakupu</option>
+          </select>
+          <button class="add-btn" onclick="addDecision()">+</button>
+        </div>
+        <div class="decision-list" id="decisionList"></div>
+      </div>
+    </div>
+
+  </div>
+
+
+<div class="sos-float">
+  <button class="sos-btn" onclick="openSOS()" title="Nagła pomoc finansowa">🚨</button>
+  <div class="sos-label">Nagłe wydatki</div>
+</div>
+
+<!-- ═══ SOS MODAL ═══ -->
+<div class="sos-overlay" id="sosOverlay" onclick="closeSOS(event)">
+  <div class="sos-modal" onclick="event.stopPropagation()">
+    <div class="sos-modal-header">
+      <div class="sos-modal-icon">🚨</div>
+      <div>
+        <div class="sos-modal-title">Nagłe Wydatki</div>
+        <div class="sos-modal-sub">// Zanim sięgniesz po kartę — odpowiedz szczerze</div>
+      </div>
+    </div>
+    <div class="sos-questions">
+      <div class="sos-q">
+        <div class="sos-q-text">1. Czy to wydatek niezbędny do funkcjonowania w ciągu 48h?</div>
+        <div class="sos-q-answers">
+          <button class="sos-ans" onclick="pickAns(this,'q1','tak')">✅ Tak, absolutnie</button>
+          <button class="sos-ans" onclick="pickAns(this,'q1','moze')">🤔 Może, nie jestem pewien</button>
+          <button class="sos-ans" onclick="pickAns(this,'q1','nie')">❌ Nie, mogę poczekać</button>
+        </div>
+      </div>
+      <div class="sos-q">
+        <div class="sos-q-text">2. Ile razy w ostatnim tygodniu myślałeś o tym zakupie?</div>
+        <div class="sos-q-answers">
+          <button class="sos-ans" onclick="pickAns(this,'q2','raz')">1 raz — dopiero teraz</button>
+          <button class="sos-ans" onclick="pickAns(this,'q2','kilka')">Kilka razy</button>
+          <button class="sos-ans" onclick="pickAns(this,'q2','duzo')">Codziennie</button>
+        </div>
+      </div>
+      <div class="sos-q">
+        <div class="sos-q-text">3. Jak się teraz czujesz?</div>
+        <div class="sos-q-answers">
+          <button class="sos-ans" onclick="pickAns(this,'q3','ok')">😐 Normalnie</button>
+          <button class="sos-ans" onclick="pickAns(this,'q3','stres')">😤 Stres / napięcie</button>
+          <button class="sos-ans" onclick="pickAns(this,'q3','nuda')">😴 Nuda / brak energii</button>
+          <button class="sos-ans" onclick="pickAns(this,'q3','urlop')">🏖️ Na luzie / urlopowo</button>
+        </div>
+      </div>
+    </div>
+    <div class="sos-result" id="sosResult">
+      <div class="sos-result-verdict" id="sosVerdict"></div>
+      <div class="sos-result-text" id="sosText"></div>
+    </div>
+    <div class="sos-modal-btns">
+      <button class="sos-btn-close" onclick="closeSOS()">Zamknij</button>
+      <button class="sos-btn-stop" onclick="sosAnalyze()">🧠 Sprawdź mój impuls</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ YOLO OVERLAY ═══ -->
+<div class="yolo-overlay" id="yoloOverlay">
+  <div class="yolo-content">
+    <span class="yolo-skull">💀</span>
+    <div class="yolo-main" id="yoloTitle">ZATRZYMAJ SIĘ</div>
+    <div class="yolo-msgs" id="yoloMsgs"></div>
+    <div class="yolo-balance">
+      <span class="yolo-balance-label">TWOJE SALDO</span>
+      <span id="yoloBalance">0,00 zł</span>
+    </div>
+    <button class="yolo-close" onclick="closeYolo()">ROZUMIEM — WRÓĆ DO BUDŻETU</button>
+  </div>
+</div>
+
+<!-- ═══ TITLE REVEAL ═══ -->
+<div class="title-reveal" id="titleReveal">
+  <div class="title-reveal-inner">
+    <div class="tr-prefix">// twój tytuł finansowy</div>
+    <span class="tr-emoji" id="trEmoji">🏆</span>
+    <div class="tr-title" id="trTitle">—</div>
+    <div class="tr-subtitle" id="trSubtitle"></div>
+    <div class="tr-pts" id="trPts"></div>
+    <button class="tr-close" onclick="closeTitleReveal()">ZAMKNIJ CEREMONIĘ</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════
+// STATE & STORAGE
+// ════════════════════════════════
+const KEYS = {
+  income:'fin_income', fixed:'fin_fixed', variable:'fin_variable',
+  goals:'fin_goals', impulses:'fin_impulses', yoloThresh:'fin_yolo_thresh',
+  decisions:'fin_decisions', rankStats:'fin_rank_stats'
+};
+let data = {
+  income:    JSON.parse(localStorage.getItem(KEYS.income)    || '[]'),
+  fixed:     JSON.parse(localStorage.getItem(KEYS.fixed)     || '[]'),
+  variable:  JSON.parse(localStorage.getItem(KEYS.variable)  || '[]'),
+  goals:     JSON.parse(localStorage.getItem(KEYS.goals)     || '[]'),
+  impulses:  JSON.parse(localStorage.getItem(KEYS.impulses)  || '[]'),
+  decisions: JSON.parse(localStorage.getItem(KEYS.decisions) || '[]'),
+  rankStats: JSON.parse(localStorage.getItem(KEYS.rankStats) || '{"sosTimes":0,"yoloTimes":0}'),
+};
+let yoloThresh = parseInt(localStorage.getItem(KEYS.yoloThresh) || '20');
+let yoloShown = false;
+let sosAnswers = {};
+
+document.getElementById('dateLabel').textContent =
+  new Date().toLocaleDateString('pl-PL', { weekday:'long', year:'numeric', month:'long' });
+document.getElementById('yoloThreshInput').value = yoloThresh;
+document.getElementById('yoloThreshLabel').textContent = yoloThresh + '% dochodu';
+
+function save() {
+  Object.keys(KEYS).forEach(k => {
+    if (k !== 'yoloThresh') localStorage.setItem(KEYS[k], JSON.stringify(data[k]));
+  });
+}
+function fmt(n) {
+  return n.toLocaleString('pl-PL', { minimumFractionDigits:2, maximumFractionDigits:2 }) + ' zł';
+}
+function sum(arr) { return arr.reduce((a,b) => a+b.amount, 0); }
+
+// ════════════════════════════════
+// RENDER — LAYER 1
+// ════════════════════════════════
+function renderItems(type) {
+  const listEl = document.getElementById(type==='income'?'listIncome':type==='fixed'?'listFixed':'listVar');
+  const color = type==='income'?'var(--green)':type==='fixed'?'var(--red)':'var(--blue)';
+  const arr = data[type];
+  if (!arr.length) { listEl.innerHTML='<div class="empty">— brak pozycji —</div>'; return; }
+  listEl.innerHTML = arr.map((item,i)=>`
+    <div class="item-row">
+      <div class="item-name">${item.name}</div>
+      <div class="item-amount" style="color:${color}">${fmt(item.amount)}</div>
+      <button class="item-del" onclick="delItem('${type}',${i})">×</button>
+    </div>`).join('');
+}
+
+function renderGoals() {
+  const el = document.getElementById('listGoals');
+  if (!data.goals.length) { el.innerHTML='<div class="empty" style="padding:20px">— brak celów —</div>'; return; }
+  el.innerHTML = data.goals.map((g,i)=>{
+    const pct = Math.min(100,Math.round((g.saved/g.target)*100))||0;
+    return `<div class="goal-item">
+      <div class="goal-top">
+        <div class="goal-name">${g.name}</div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="goal-numbers"><span class="goal-saved">${fmt(g.saved)}</span><span>/ ${fmt(g.target)}</span><span style="color:var(--purple)">${pct}%</span></div>
+          <button class="goal-del" onclick="delGoal(${i})">×</button>
+        </div>
+      </div>
+      <div class="goal-track"><div class="goal-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════
+// RENDER — IMPULSES
+// ════════════════════════════════
+function renderImpulses() {
+  const el = document.getElementById('impulseLog');
+  if (!data.impulses.length) {
+    el.innerHTML='<div class="empty">— brak zapisanych zakupów impulsywnych —</div>'; return;
+  }
+  el.innerHTML = [...data.impulses].reverse().map((imp,ri)=>{
+    const i = data.impulses.length-1-ri;
+    return `<div class="impulse-row">
+      <div class="impulse-emoji">${imp.cat.split(' ')[0]}</div>
+      <div class="impulse-info">
+        <div class="impulse-name">${imp.name}</div>
+        <div class="impulse-meta">${imp.cat} · ${imp.date}</div>
+      </div>
+      <div class="impulse-amt">${fmt(imp.amount)}</div>
+      <button class="impulse-del" onclick="delImpulse(${i})">×</button>
+    </div>`;
+  }).join('');
+  const tot = sum(data.impulses);
+  document.getElementById('impulseTotal').textContent = fmt(tot) + ' łącznie';
+}
+
+// ════════════════════════════════
+// TOTALS + YOLO CHECK
+// ════════════════════════════════
+function updateTotals() {
+  const inc  = sum(data.income);
+  const fix  = sum(data.fixed);
+  const vari = sum(data.variable);
+  const goals= data.goals.reduce((a,g)=>a+g.target,0);
+  const total= fix+vari;
+  const bal  = inc - total;
+  const pct  = inc>0 ? Math.min(200,Math.round((total/inc)*100)) : 0;
+  const impTot = sum(data.impulses);
+
+  // hero balance
+  const heroEl = document.getElementById('heroBalance');
+  heroEl.textContent = fmt(Math.abs(bal));
+  heroEl.className = 'balance-amount'+(bal<0?' negative':'');
+  document.getElementById('heroSub').textContent = bal>=0?'↑ nadwyżka miesięczna':'↓ deficyt miesięczny';
+
+  // pills
+  document.getElementById('pillIncome').textContent = fmt(inc);
+  document.getElementById('pillFixed').textContent  = fmt(fix);
+  document.getElementById('pillVar').textContent    = fmt(vari);
+  document.getElementById('totalIncome').textContent= fmt(inc);
+  document.getElementById('totalFixed').textContent = fmt(fix);
+  document.getElementById('totalVar').textContent   = fmt(vari);
+  document.getElementById('totalGoals').textContent = fmt(goals);
+
+  // progress bar
+  document.getElementById('progressPct').textContent = pct+'%';
+  document.getElementById('progressFill').style.width = Math.min(100,pct)+'%';
+  document.getElementById('progressFill').style.background =
+    pct>90?'linear-gradient(90deg,var(--red),#f87171)':
+    pct>70?'linear-gradient(90deg,#f59e0b,var(--accent2))':
+    'linear-gradient(90deg,var(--accent),var(--accent2))';
+
+  // analiza
+  const savRate = inc>0?Math.max(0,Math.round(((inc-total)/inc)*100)):0;
+  const fixRate = inc>0?Math.round((fix/inc)*100):0;
+  document.getElementById('savingsRate').textContent = savRate+'%';
+  document.getElementById('fixedRate').textContent   = fixRate+'%';
+  document.getElementById('freeFlow').textContent    = fmt(Math.max(0,bal));
+
+  // chart
+  const max = Math.max(inc,fix,vari,goals,bal,1);
+  const barH = n => Math.max(0,Math.round((Math.max(0,n)/max)*100))+'%';
+  document.getElementById('bIncome').style.height = barH(inc);
+  document.getElementById('bFixed').style.height  = barH(fix);
+  document.getElementById('bVar').style.height    = barH(vari);
+  document.getElementById('bGoals').style.height  = barH(goals);
+  document.getElementById('bFree').style.height   = barH(Math.max(0,bal));
+
+  // settings
+  document.getElementById('sCountInc').textContent    = data.income.length;
+  document.getElementById('sCountFixed').textContent   = data.fixed.length;
+  document.getElementById('sCountVar').textContent     = data.variable.length;
+  document.getElementById('sCountGoals').textContent   = data.goals.length;
+  document.getElementById('sCountImpulse').textContent = data.impulses.length;
+
+  // ─── HEALTH BAR (header + psychologia) ───
+  const walletHealth = inc>0 ? Math.max(0,Math.min(100,Math.round((bal/inc)*100))) : 0;
+  const healthColor =
+    walletHealth>60?'var(--green)':
+    walletHealth>30?'var(--orange)':
+    'var(--red)';
+  const healthEl = document.getElementById('headerHealth');
+  healthEl.style.width    = walletHealth+'%';
+  healthEl.style.background = healthColor;
+  document.getElementById('headerHealthPct').textContent = walletHealth+'%';
+
+  // health card
+  const hcCard = document.getElementById('hcWallet');
+  hcCard.className = 'health-card '+(walletHealth>60?'green':walletHealth>30?'orange':'red');
+  document.getElementById('hcWalletVal').textContent  = walletHealth+'%';
+  document.getElementById('hcWalletVal').style.color  = healthColor;
+  const hcBar = document.getElementById('hcWalletBar');
+  hcBar.style.width      = walletHealth+'%';
+  hcBar.style.background = healthColor;
+  document.getElementById('hcWalletDesc').textContent =
+    walletHealth>60?'Portfel w dobrej kondycji. Nadwyżka jest solidna.':
+    walletHealth>30?'Uwaga — budżet napięty. Ogranicz zmienne wydatki.':
+    inc>0?'KRYTYCZNY poziom środków! Sprawdź koszty zmienne natychmiast.':
+    'Uzupełnij dane budżetu aby zobaczyć stan portfela.';
+
+  // impulse health card
+  const impRatio = inc>0?Math.min(100,Math.round((impTot/inc)*100)):0;
+  document.getElementById('hcImpulseVal').textContent = fmt(impTot);
+  document.getElementById('hcImpulseBar').style.width = impRatio+'%';
+  document.getElementById('hcImpulseDesc').textContent =
+    impTot===0?'Brak zarejestrowanych zakupów impulsywnych.':
+    `${impRatio}% dochodu na zakupy impulsywne. ${impRatio>15?'To za dużo!':'Kontroluj ten wskaźnik.'}`;
+
+  // ─── YOLO TRIGGER ───
+  if (inc > 0) {
+    const balPct = Math.round((bal/inc)*100);
+    if (balPct <= yoloThresh && !yoloShown) {
+      setTimeout(() => triggerYolo(bal, balPct), 600);
+    } else if (balPct > yoloThresh) {
+      yoloShown = false;
+    }
+  }
+}
+
+// ════════════════════════════════
+// YOLO
+// ════════════════════════════════
+function triggerYolo(bal, balPct) {
+  yoloShown = true;
+  data.rankStats.yoloTimes = (data.rankStats.yoloTimes||0) + 1;
+  localStorage.setItem(KEYS.rankStats, JSON.stringify(data.rankStats));
+  const inc = sum(data.income);
+  document.getElementById('yoloBalance').textContent = fmt(Math.max(0,bal));
+
+  const isVacation = data.impulses.some(i=>i.cat.includes('Podróże')||i.cat.includes('urlop'));
+  const msgs = [];
+
+  if (balPct < 0) {
+    document.getElementById('yoloTitle').textContent = 'JESTEŚ NA MINUSIE';
+    msgs.push('TWÓJ PORTFEL KRZYCZY O POMOC');
+    msgs.push('WYDAŁEŚ WIĘCEJ NIŻ ZAROBIŁEŚ');
+    msgs.push('CZAS NA POWAŻNĄ ROZMOWĘ Z LUSTREM');
+    msgs.push('MÓZG JEST — UŻYJ GO');
+  } else if (balPct <= 5) {
+    document.getElementById('yoloTitle').textContent = 'OSTATNIE GROSZE';
+    msgs.push('DOSŁOWNIE NICI Z OSZCZĘDNOŚCI');
+    msgs.push('JEDEN NAGŁY WYDATEK = KATASTROFA');
+    msgs.push('PORTFEL WYSŁAŁ SOS');
+    msgs.push('STOP. ŻADEN ZAKUP NIE JEST TERAZ WART TEGO');
+  } else if (isVacation) {
+    document.getElementById('yoloTitle').textContent = 'URLOP TO PUŁAPKA';
+    msgs.push('MÓZG NA URLOPIE — PORTFEL NIE');
+    msgs.push('KAŻDE "ALE TYLKO RAZ" SIĘ SUMUJE');
+    msgs.push('WRÓĆ DO BUDŻETU ZANIM WRÓCISZ DO DOMU');
+    msgs.push('WSPOMNIENIA DARMO — DŁUG NIE');
+  } else {
+    document.getElementById('yoloTitle').textContent = 'ZATRZYMAJ SIĘ';
+    msgs.push('SALDO SPADA PONIŻEJ PROGU BEZPIECZEŃSTWA');
+    msgs.push('KOSZTY POCHŁANIAJĄ ZA DUŻO');
+    msgs.push('ZANIM WYDASZ — SPRAWDŹ BUDŻET');
+    msgs.push('TWÓJ PRZYSZŁY JA CI PODZIĘKUJE');
+  }
+
+  document.getElementById('yoloMsgs').innerHTML = msgs.map(m=>`<div class="yolo-msg">${m}</div>`).join('');
+  document.getElementById('yoloOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeYolo() {
+  document.getElementById('yoloOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+// ════════════════════════════════
+// SOS
+// ════════════════════════════════
+function openSOS() {
+  data.rankStats.sosTimes = (data.rankStats.sosTimes||0) + 1;
+  localStorage.setItem(KEYS.rankStats, JSON.stringify(data.rankStats));
+  sosAnswers = {};
+  document.querySelectorAll('.sos-ans').forEach(b=>b.classList.remove('chosen'));
+  document.getElementById('sosResult').className = 'sos-result';
+  document.getElementById('sosOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeSOS(e) {
+  if (e && e.target !== document.getElementById('sosOverlay')) return;
+  document.getElementById('sosOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function pickAns(btn, q, val) {
+  document.querySelectorAll(`.sos-q:nth-child(${q==='q1'?1:q==='q2'?2:3}) .sos-ans`).forEach(b=>b.classList.remove('chosen'));
+  btn.classList.add('chosen');
+  sosAnswers[q] = val;
+}
+function sosAnalyze() {
+  const {q1,q2,q3} = sosAnswers;
+  if (!q1||!q2||!q3) { toast('Odpowiedz na wszystkie pytania'); return; }
+
+  let verdict, text, cls;
+  const isImpulse = q1==='nie' || (q1==='moze'&&q3!=='ok') || q3==='nuda' || q3==='urlop';
+  const isUrgent  = q1==='tak' && (q2==='raz'||q2==='kilka');
+
+  if (isUrgent && !isImpulse) {
+    cls='green';
+    verdict='✅ Wygląda na uzasadniony wydatek';
+    text='Twoje odpowiedzi sugerują realną potrzebę. Upewnij się tylko, że masz środki w budżecie i nie nadwyręży to innych zobowiązań.';
+  } else if (q3==='urlop') {
+    cls='red';
+    verdict='🏖️ KLASYCZNA PUŁAPKA URLOPOWA';
+    text='Mózg na urlopie wyłącza racjonalne myślenie o pieniądzach. Zrelaksowanie = obniżona kontrola impulsów. Poczekaj 48h i zdecyduj po powrocie.';
+  } else if (q3==='stres') {
+    cls='red';
+    verdict='😤 ZAKUP EMOCJONALNY — STOP';
+    text='Kupujesz pod wpływem stresu lub napięcia. To tzw. "retail therapy". Chwilowa ulga, długotrwałe żale. Zrób coś innego przez 30 minut.';
+  } else if (q3==='nuda') {
+    cls='orange';
+    verdict='😴 NUDA ≠ POTRZEBA ZAKUPU';
+    text='Nuda to jeden z głównych wyzwalaczy impulsów. Czy naprawdę potrzebujesz tego, czy po prostu szukasz stymulacji? Wyjdź na spacer.';
+  } else if (q1==='nie') {
+    cls='red';
+    verdict='❌ CZYSTY IMPULS — NIE RÓB TEGO';
+    text='Sam przyznałeś, że możesz poczekać. To 100% impulsywny wydatek. Wróć do tego za 24h — i sprawdź czy nadal chcesz.';
+  } else {
+    cls='orange';
+    verdict='⚠️ Wątpliwy — odczekaj 24h';
+    text='Nie jesteś pewien potrzeby. Zasada 24h działa w 80% przypadków — po dobie impuls mija. Zapisz sobie przypomnienie i sprawdź jutro.';
+  }
+
+  const r = document.getElementById('sosResult');
+  r.className = 'sos-result show '+cls;
+  document.getElementById('sosVerdict').textContent = verdict;
+  document.getElementById('sosText').textContent    = text;
+}
+
+// ════════════════════════════════
+// CRUD
+// ════════════════════════════════
+function addItem(type) {
+  const nId = type==='income'?'nameIncome':type==='fixed'?'nameFixed':'nameVar';
+  const aId = type==='income'?'amtIncome':type==='fixed'?'amtFixed':'amtVar';
+  const name = document.getElementById(nId).value.trim();
+  const amount = parseFloat(document.getElementById(aId).value);
+  if (!name||!amount||amount<=0) { toast('Uzupełnij nazwę i kwotę'); return; }
+  data[type].push({name,amount});
+  save(); render();
+  document.getElementById(nId).value='';
+  document.getElementById(aId).value='';
+  toast('Dodano: '+name);
+}
+function delItem(type,i) {
+  const name = data[type][i].name;
+  data[type].splice(i,1);
+  save(); render();
+  toast('Usunięto: '+name);
+}
+function addGoal() {
+  const name   = document.getElementById('goalName').value.trim();
+  const target = parseFloat(document.getElementById('goalTarget').value)||0;
+  const saved  = parseFloat(document.getElementById('goalSaved').value)||0;
+  if (!name||target<=0) { toast('Uzupełnij nazwę i kwotę celu'); return; }
+  data.goals.push({name,target,saved});
+  save(); render();
+  document.getElementById('goalName').value='';
+  document.getElementById('goalTarget').value='';
+  document.getElementById('goalSaved').value='';
+  toast('Cel dodany: '+name);
+}
+function delGoal(i) {
+  const name=data.goals[i].name;
+  data.goals.splice(i,1);
+  save(); render();
+  toast('Usunięto cel: '+name);
+}
+function addImpulse() {
+  const name   = document.getElementById('impulseName').value.trim();
+  const amount = parseFloat(document.getElementById('impulseAmt').value);
+  const cat    = document.getElementById('impulseCat').value;
+  if (!name||!amount||amount<=0) { toast('Uzupełnij co i za ile'); return; }
+  const d2 = new Date();
+  const date = d2.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric'});
+  data.impulses.push({name,amount,cat,date});
+  save(); renderImpulses(); updateTotals();
+  document.getElementById('impulseName').value='';
+  document.getElementById('impulseAmt').value='';
+  toast('Zarejestrowano impuls 💀');
+}
+function delImpulse(i) {
+  data.impulses.splice(i,1);
+  save(); renderImpulses(); updateTotals();
+  toast('Usunięto wpis');
+}
+function clearAll() {
+  if (!confirm('Na pewno wyczyścić wszystkie dane?')) return;
+  data = {income:[],fixed:[],variable:[],goals:[],impulses:[],decisions:[],rankStats:{sosTimes:0,yoloTimes:0}};
+  yoloShown = false;
+  save(); render();
+  toast('Dane wyczyszczone');
+}
+function setYoloThresh() {
+  const v = parseInt(document.getElementById('yoloThreshInput').value)||20;
+  yoloThresh = Math.max(1,Math.min(99,v));
+  localStorage.setItem(KEYS.yoloThresh, yoloThresh);
+  document.getElementById('yoloThreshLabel').textContent = yoloThresh+'% dochodu';
+  yoloShown = false;
+  toast('Próg alarmu ustawiony na '+yoloThresh+'%');
+  updateTotals();
+}
+
+// ════════════════════════════════
+// TABS
+// ════════════════════════════════
+function switchTab(name,btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+  updateTotals();
+}
+
+// ════════════════════════════════
+// TOAST
+// ════════════════════════════════
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+// ════════════════════════════════
+// KEYBOARD
+// ════════════════════════════════
+document.addEventListener('keydown', e=>{
+  if (e.key==='Escape') { closeSOS(); closeYolo(); closeTitleReveal(); }
+  if (e.key!=='Enter') return;
+  const id = document.activeElement?.id;
+  if (id==='nameIncome'||id==='amtIncome') addItem('income');
+  if (id==='nameFixed' ||id==='amtFixed')  addItem('fixed');
+  if (id==='nameVar'   ||id==='amtVar')    addItem('variable');
+  if (id==='goalName'||id==='goalTarget'||id==='goalSaved') addGoal();
+  if (id==='impulseName'||id==='impulseAmt') addImpulse();
+  if (id==='decName') addDecision();
+});
+
+// ════════════════════════════════
+// WARSTWA 3 — RANKING DECYZJI
+// ════════════════════════════════
+
+const DECISION_TYPES = {
+  sos:        { icon:'🚨', label:'Użyłem SOS',          pts:+3 },
+  odpuscil:   { icon:'✅', label:'Odpuściłem zakup',     pts:+5 },
+  przemyslal: { icon:'🧠', label:'Przemyślałem 24h',     pts:+4 },
+  cel:        { icon:'🎯', label:'Oszczędziłem na cel',  pts:+6 },
+  yolo:       { icon:'💀', label:'Dostałem YOLO alarm',  pts:-2 },
+  impuls:     { icon:'💸', label:'Kupiłem z impulsu',    pts:-4 },
+  promocja:   { icon:'🏷️', label:'Kupiłem na promocji', pts:+1 },
+  pozaluje:   { icon:'😬', label:'Żałuję zakupu',        pts:-3 },
+};
+
+const TITLES = [
+  {
+    id:'zagrozenie',
+    emoji:'☠️',
+    name:'Zagrożenie dla Własnego Budżetu',
+    desc:'Legenda. Nikt nie wydaje tak kreatywnie jak Ty. Niestety.',
+    condition:'Mniej niż -15 pkt lub 10+ impulsów',
+    color:'#a855f7',
+    glow:'rgba(168,85,247,.4)',
+    check: s => s.totalPts<=-15 || s.impulses>=10,
+  },
+  {
+    id:'cesarz',
+    emoji:'👑',
+    name:'Cesarz Impulsu',
+    desc:'Twoja karta kredytowa błaga o litość. Ale serce jest wolne.',
+    condition:'8+ zakupów impulsywnych',
+    color:'#f97316',
+    glow:'rgba(249,115,22,.4)',
+    check: s => s.impulses>=8,
+  },
+  {
+    id:'baron',
+    emoji:'🎰',
+    name:'Baron YOLO',
+    desc:'YOLO to nie strategia. Ale przynajmniej masz styl.',
+    condition:'5+ YOLO alarmów lub -10 pkt',
+    color:'#ef4444',
+    glow:'rgba(239,68,68,.4)',
+    check: s => s.yolo>=5 || s.totalPts<=-10,
+  },
+  {
+    id:'promocja',
+    emoji:'🏷️',
+    name:'Król Promocji',
+    desc:'Czujesz promocję z odległości 300m. Czasem warto, czasem nie.',
+    condition:'5+ zakupów promocyjnych',
+    color:'#d4af37',
+    glow:'rgba(212,175,55,.4)',
+    check: s => s.promocja>=5,
+  },
+  {
+    id:'obywatel',
+    emoji:'🏛️',
+    name:'Rozsądny Obywatel',
+    desc:'Solidny i przewidywalny. Portfel szanuje Twoje decyzje.',
+    condition:'10–29 punktów, max 2 impulsy',
+    color:'#22c55e',
+    glow:'rgba(34,197,94,.4)',
+    check: s => s.totalPts>=10 && s.totalPts<30 && s.impulses<=2,
+  },
+  {
+    id:'ninja',
+    emoji:'🥷',
+    name:'Księgowy Ninja',
+    desc:'Mistrz kontroli. Twoje decyzje są precyzyjne jak katana.',
+    condition:'30+ punktów i 5+ odpuściłem',
+    color:'#60a5fa',
+    glow:'rgba(96,165,250,.4)',
+    check: s => s.totalPts>=30 && s.odpuscil>=5,
+  },
+];
+
+function calcRankStats() {
+  const decs = data.decisions;
+  let totalPts = 0;
+  decs.forEach(d => { totalPts += (DECISION_TYPES[d.type]?.pts || 0); });
+  return {
+    totalPts,
+    sos:        data.rankStats.sosTimes || 0,
+    yolo:       (data.rankStats.yoloTimes||0) + decs.filter(d=>d.type==='yolo').length,
+    odpuscil:   decs.filter(d=>d.type==='odpuscil').length,
+    impulses:   data.impulses.length + decs.filter(d=>d.type==='impuls').length,
+    promocja:   decs.filter(d=>d.type==='promocja').length,
+    przemyslal: decs.filter(d=>d.type==='przemyslal').length,
+    cel:        decs.filter(d=>d.type==='cel').length,
+    pozaluje:   decs.filter(d=>d.type==='pozaluje').length,
+  };
+}
+
+function getCurrentTitle(s) {
+  // Ordered worst→best; last match wins (best applicable)
+  let current = null;
+  for (const t of TITLES) { if (t.check(s)) current = t; }
+  return current;
+}
+
+function renderRanking() {
+  const s = calcRankStats();
+  const t = getCurrentTitle(s);
+
+  document.getElementById('rsSOS').textContent     = s.sos;
+  document.getElementById('rsYOLO').textContent    = data.rankStats.yoloTimes||0;
+  document.getElementById('rsOdpusc').textContent  = s.odpuscil;
+  document.getElementById('rsImpulse').textContent = data.impulses.length;
+
+  if (t) {
+    document.getElementById('ctcEmoji').textContent  = t.emoji;
+    document.getElementById('ctcName').textContent   = t.name;
+    document.getElementById('ctcName').style.color   = t.color;
+    document.getElementById('ctcDesc').textContent   = t.desc;
+    document.getElementById('ctcCard').style.borderColor = t.color+'66';
+    document.getElementById('ctcCard').style.boxShadow   = `0 0 30px ${t.glow}`;
+  } else {
+    document.getElementById('ctcEmoji').textContent  = '❓';
+    document.getElementById('ctcName').textContent   = 'Nieznany';
+    document.getElementById('ctcName').style.color   = 'var(--muted)';
+    document.getElementById('ctcDesc').textContent   = 'Dodaj decyzje finansowe aby odblokować swój tytuł.';
+    document.getElementById('ctcCard').style.borderColor = 'var(--border)';
+    document.getElementById('ctcCard').style.boxShadow   = 'none';
+  }
+  const ptsEl = document.getElementById('ctcScore');
+  ptsEl.textContent = s.totalPts>=0 ? '+'+s.totalPts : s.totalPts;
+  ptsEl.style.color = s.totalPts>=0 ? 'var(--green)' : 'var(--red)';
+
+  document.getElementById('titlesGrid').innerHTML = TITLES.map(ti => {
+    const unlocked = ti.check(s);
+    const isCurrent = t && ti.id===t.id;
+    const cls = isCurrent ? 'title-card unlocked active-title' : unlocked ? 'title-card unlocked' : 'title-card';
+    const badgeTxt = isCurrent ? 'TWÓJ' : unlocked ? 'ZDOBYTY' : 'ZABLOK.';
+    const badgeCls = isCurrent ? 'tc-badge current' : unlocked ? 'tc-badge earned' : 'tc-badge locked';
+    return `<div class="${cls}" style="--tc-color:${ti.color};--tc-glow:${ti.glow}">
+      <div class="${badgeCls}">${badgeTxt}</div>
+      <span class="tc-emoji">${ti.emoji}</span>
+      <div class="tc-name" style="${unlocked?'color:'+ti.color:''}">${ti.name}</div>
+      <div class="tc-condition">${ti.condition}</div>
+    </div>`;
+  }).join('');
+
+  renderDecisions();
+}
+
+function renderDecisions() {
+  const el = document.getElementById('decisionList');
+  const total = data.decisions.reduce((a,d)=>a+(DECISION_TYPES[d.type]?.pts||0),0);
+  document.getElementById('totalDecPoints').textContent = (total>=0?'+':'')+total+' pkt łącznie';
+  if (!data.decisions.length) {
+    el.innerHTML='<div class="empty">— brak zapisanych decyzji —</div>'; return;
+  }
+  el.innerHTML = [...data.decisions].reverse().map((dec,ri)=>{
+    const i = data.decisions.length-1-ri;
+    const dt = DECISION_TYPES[dec.type];
+    const pts = dt?.pts||0;
+    return `<div class="decision-row">
+      <div class="dec-type-icon">${dt?.icon||'•'}</div>
+      <div class="dec-info">
+        <div class="dec-name">${dec.name}</div>
+        <div class="dec-meta">${dt?.label||dec.type} · ${dec.date}</div>
+      </div>
+      <div class="dec-pts" style="color:${pts>=0?'var(--green)':'var(--red)'}">${pts>=0?'+':''}${pts} pkt</div>
+      <button class="dec-del" onclick="delDecision(${i})">×</button>
+    </div>`;
+  }).join('');
+}
+
+function addDecision() {
+  const name = document.getElementById('decName').value.trim();
+  const type = document.getElementById('decType').value;
+  if (!name) { toast('Opisz decyzję'); return; }
+  const date = new Date().toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric'});
+  data.decisions.push({name,type,date});
+  localStorage.setItem(KEYS.decisions, JSON.stringify(data.decisions));
+  const pts = DECISION_TYPES[type]?.pts||0;
+  renderRanking();
+  document.getElementById('decName').value='';
+  toast((pts>=0?'+':'')+pts+' pkt — '+DECISION_TYPES[type]?.label);
+}
+
+function delDecision(i) {
+  data.decisions.splice(i,1);
+  localStorage.setItem(KEYS.decisions, JSON.stringify(data.decisions));
+  renderRanking();
+  toast('Usunięto decyzję');
+}
+
+function showTitleReveal() {
+  const s = calcRankStats();
+  const t = getCurrentTitle(s);
+  const el = document.getElementById('titleReveal');
+  const color = t ? t.color : 'var(--accent)';
+  const glow  = t ? t.glow  : 'rgba(212,175,55,.3)';
+  el.style.cssText += `--tr-color:${glow};--tr-text:${color};--tr-glow:${glow}`;
+  document.getElementById('trEmoji').textContent    = t ? t.emoji : '❓';
+  document.getElementById('trTitle').textContent    = t ? t.name  : 'Brak tytułu';
+  document.getElementById('trTitle').style.color    = color;
+  document.getElementById('trTitle').style.textShadow = `0 0 40px ${glow}, 0 0 80px ${glow}`;
+  document.getElementById('trSubtitle').textContent = t ? t.desc  : 'Dodaj więcej decyzji finansowych aby zdobyć swój tytuł.';
+  document.getElementById('trPts').textContent      = '// ' + (s.totalPts>=0?'+':'')+s.totalPts + ' punktów · ' + data.decisions.length + ' decyzji';
+  el.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeTitleReveal() {
+  document.getElementById('titleReveal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+// ════════════════════════════════
+// FULL RENDER
+// ════════════════════════════════
+function render() {
+  renderItems('income');
+  renderItems('fixed');
+  renderItems('variable');
+  renderGoals();
+  renderImpulses();
+  updateTotals();
+  renderRanking();
+}
+
+render();
+</script>
+</body>
+</html>
